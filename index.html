@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f9ff">
+  <title>Balloon Bash | Party Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --void: #f5f9ff;
+      --panel: rgba(255, 255, 255, .86);
+      --line: rgba(91, 110, 139, .17);
+      --muted: #78849b;
+      --text: #35425c;
+      --mint: #42c7c4;
+      --mint-dim: #4d8fc7;
+      --coral: #f47d99;
+      --gold: #f2bc4c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 10% 10%, rgba(255, 191, 208, .5), transparent 32%),
+        radial-gradient(ellipse at 91% 15%, rgba(153, 224, 239, .42), transparent 33%),
+        radial-gradient(ellipse at 54% 96%, rgba(255, 223, 153, .35), transparent 38%),
+        var(--void);
+      font-family: "Nunito", "Trebuchet MS", sans-serif;
+    }
+
+    body::before, body::after {
+      position: fixed;
+      inset: -8%;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+    }
+
+    body::before {
+      opacity: .65;
+      background-image:
+        radial-gradient(circle at 8% 20%, rgba(255, 255, 255, .95) 0 5px, rgba(104, 203, 213, .28) 6px 7px, transparent 8px),
+        radial-gradient(circle at 28% 75%, rgba(255, 255, 255, .85) 0 8px, rgba(244, 125, 153, .23) 9px 10px, transparent 11px),
+        radial-gradient(circle at 63% 17%, rgba(255, 255, 255, .9) 0 6px, rgba(242, 188, 76, .24) 7px 8px, transparent 9px),
+        radial-gradient(circle at 89% 65%, rgba(255, 255, 255, .8) 0 10px, rgba(104, 203, 213, .2) 11px 12px, transparent 13px);
+      background-size: 100% 100%;
+      animation: bubble-drift 18s ease-in-out infinite alternate;
+    }
+
+    body::after {
+      inset: 0;
+      opacity: .56;
+      background-image:
+        radial-gradient(circle at 14% 54%, transparent 0 25px, rgba(255, 255, 255, .8) 26px 27px, transparent 28px),
+        radial-gradient(circle at 79% 37%, transparent 0 18px, rgba(255, 255, 255, .72) 19px 20px, transparent 21px),
+        radial-gradient(circle at 43% 90%, transparent 0 12px, rgba(255, 255, 255, .7) 13px 14px, transparent 15px);
+    }
+
+    button { font: inherit; }
+
+    .shell {
+      width: min(100% - 40px, 920px);
+      margin: 0 auto;
+      padding: 29px 0 34px;
+      animation: rise-in .7s cubic-bezier(.2, .75, .25, 1) both;
+    }
+
+    .topbar, .brand, .pilot, .section-label, .arena-head, .score-row, .controls, .turn-readout {
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar { justify-content: space-between; margin-bottom: 43px; }
+    .brand { gap: 12px; }
+
+    .brand-mark {
+      display: grid;
+      width: 37px;
+      height: 37px;
+      place-items: center;
+      border: 1px solid rgba(77, 143, 199, .22);
+      border-radius: 14px;
+      color: var(--mint);
+      background: rgba(255, 255, 255, .72);
+      box-shadow: 0 6px 18px rgba(77, 143, 199, .12), inset 0 1px rgba(255, 255, 255, .9);
+    }
+
+    .brand-mark svg { width: 21px; height: 21px; }
+    .brand-name { font: 800 18px/1 "Baloo 2", sans-serif; letter-spacing: 1px; }
+    .brand-sub { margin-top: 5px; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: 1.4px; }
+
+    .sector-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #63718a;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .5px;
+    }
+
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 4px rgba(244, 125, 153, .15); }
+
+    .intro { margin-bottom: 22px; text-align: center; }
+
+    .eyebrow, .section-label {
+      color: var(--mint-dim);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 10px 0 8px;
+      font: 800 58px/.95 "Baloo 2", "Trebuchet MS", sans-serif;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1 span { color: #e97591; text-shadow: 0 3px 0 rgba(255, 255, 255, .85); }
+    .intro p { margin: 12px 0 0; color: #77849c; font-size: 13px; font-weight: 700; letter-spacing: 0; }
+
+    .game-panel {
+      position: relative;
+      padding: 22px 28px 25px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .88);
+      border-radius: 22px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, .96), var(--panel) 62%, rgba(249, 252, 255, .94));
+      box-shadow: 0 22px 65px rgba(92, 119, 159, .16), 0 5px 18px rgba(255, 255, 255, .9) inset;
+    }
+
+    .game-panel::before {
+      position: absolute;
+      top: 0;
+      left: 10%;
+      width: 80%;
+      height: 3px;
+      border-radius: 99px;
+      content: "";
+      background: linear-gradient(90deg, transparent, #71d8d2, #f39bb0, #ffd36d, transparent);
+    }
+
+    .arena-head { justify-content: space-between; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+    .section-label { gap: 9px; color: #71809a; font-size: 10px; font-weight: 900; letter-spacing: 1.2px; }
+    .section-label::before { width: 8px; height: 8px; content: ""; border: 2px solid var(--coral); border-radius: 50%; }
+
+    .mode-switch {
+      display: flex;
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid rgba(111, 137, 169, .16);
+      border-radius: 999px;
+      background: rgba(235, 242, 251, .82);
+    }
+
+    .mode-button {
+      min-height: 34px;
+      padding: 0 11px;
+      border: 0;
+      border-radius: 999px;
+      color: #76839a;
+      background: transparent;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 900;
+      transition: color .2s, background .2s, box-shadow .2s;
+    }
+
+    .mode-button[aria-pressed="true"] { color: #fff; background: linear-gradient(135deg, #5bc9c6, #68b9d6); box-shadow: 0 3px 8px rgba(77, 143, 199, .2); }
+    .mode-button:hover:not([aria-pressed="true"]) { color: var(--text); }
+    button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+    .difficulty-control {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .difficulty-control[hidden], .starting-control[hidden] { display: none; }
+    .difficulty-label { color: #77849b; font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+    .difficulty-switch { display: flex; gap: 3px; padding: 3px; border: 1px solid rgba(111, 137, 169, .16); border-radius: 999px; background: rgba(235, 242, 251, .82); }
+    .difficulty-button { min-height: 30px; padding: 0 13px; border: 0; border-radius: 999px; color: #76839a; background: transparent; cursor: pointer; font-size: 10px; font-weight: 900; transition: color .2s, background .2s, box-shadow .2s; }
+    .difficulty-button[aria-pressed="true"] { color: #fff; background: linear-gradient(135deg, #5bc9c6, #68b9d6); box-shadow: 0 3px 8px rgba(77, 143, 199, .2); }
+    .difficulty-button:hover:not([aria-pressed="true"]) { color: var(--text); }
+    .starting-control { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+
+    .score-row { justify-content: center; gap: clamp(17px, 5vw, 53px); padding: 18px 0 16px; }
+    .pilot { min-width: 116px; gap: 10px; }
+    .pilot:last-child { flex-direction: row-reverse; text-align: right; }
+
+    .pilot-icon {
+      display: grid;
+      width: 35px;
+      height: 35px;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 1px solid rgba(77, 143, 199, .2);
+      border-radius: 13px;
+      color: var(--mint);
+      background: rgba(255, 255, 255, .76);
+      box-shadow: 0 4px 10px rgba(77, 143, 199, .1);
+    }
+
+    .pilot:last-child .pilot-icon { border-color: rgba(244, 125, 153, .25); color: var(--coral); background: rgba(255, 255, 255, .76); }
+    .pilot-icon svg { width: 20px; height: 20px; }
+    .pilot-name { color: #53627e; font-size: 10px; font-weight: 900; }
+    .pilot-score { margin-top: 3px; color: #8792a6; font-size: 9px; font-weight: 800; }
+    .score-number { color: var(--text); font: 800 22px/1 "Baloo 2", sans-serif; }
+    .versus { color: #9aa5b7; font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+
+    .turn-readout { min-height: 34px; justify-content: center; gap: 8px; margin-bottom: 12px; color: #65728a; font-size: 12px; font-weight: 800; }
+    .turn-light { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 4px rgba(66, 199, 196, .15); }
+    .turn-readout[data-player="1"] .turn-light { background: var(--coral); box-shadow: 0 0 0 4px rgba(244, 125, 153, .15); }
+    .turn-readout[data-outcome="draw"] .turn-light { background: var(--gold); box-shadow: 0 0 0 4px rgba(242, 188, 76, .18); }
+
+    .board-wrap { position: relative; width: min(100%, 390px); margin: 0 auto; }
+
+    .board {
+      display: grid;
+      aspect-ratio: 1;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 11px;
+      padding: 0;
+    }
+
+    .cell {
+      position: relative;
+      display: grid;
+      min-width: 0;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(99, 123, 157, .3);
+      border-radius: 17px;
+      background:
+        radial-gradient(ellipse at 50% 8%, rgba(255, 255, 255, .45), transparent 62%),
+        linear-gradient(145deg, #e6edf7, #dce6f2);
+      cursor: pointer;
+      transition: border-color .2s, background .2s, transform .2s, box-shadow .2s;
+    }
+
+    .cell:not(:disabled):hover {
+      z-index: 1;
+      border-color: rgba(49, 166, 170, .7);
+      background: linear-gradient(145deg, #ddf3f1, #cfeae8);
+      box-shadow: 0 8px 20px rgba(77, 143, 199, .16), inset 0 0 14px rgba(255, 255, 255, .7);
+      transform: translateY(-3px) scale(1.015);
+    }
+
+    .cell:disabled { cursor: default; }
+    .cell.winning { border-color: #d6a12a; background: #f8e6ad; box-shadow: 0 8px 20px rgba(205, 151, 32, .24), inset 0 0 12px rgba(255, 255, 255, .65); }
+
+    .balloon {
+      width: 58%;
+      height: 58%;
+      overflow: visible;
+      animation: balloon-pop-in .38s cubic-bezier(.16, 1, .3, 1) both;
+      filter: drop-shadow(0 5px 5px rgba(80, 102, 139, .2));
+    }
+
+    .balloon.player-0 { color: var(--mint); }
+    .balloon.player-1 { color: var(--coral); }
+    .cell.winning .balloon { color: var(--gold); }
+
+    .cell[data-index="4"]::after { position: absolute; width: 7px; height: 7px; border: 1px solid rgba(112, 160, 192, .28); border-radius: 50%; content: ""; background: rgba(255, 255, 255, .8); }
+    .cell[data-index="4"]:has(.balloon)::after { display: none; }
+
+    .controls { justify-content: center; padding-top: 17px; }
+
+    .reset-button {
+      display: inline-flex;
+      min-height: 39px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 13px;
+      border: 1px solid rgba(111, 137, 169, .2);
+      border-radius: 999px;
+      color: #697892;
+      background: rgba(255, 255, 255, .74);
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 900;
+      transition: border-color .2s, color .2s, background .2s;
+    }
+
+    .reset-button:hover { border-color: rgba(66, 199, 196, .55); color: #278e98; background: #e5f9f7; }
+    .reset-button svg { width: 13px; height: 13px; }
+
+    .footer { display: flex; justify-content: space-between; margin-top: 18px; color: #7d8ba2; font-size: 9px; font-weight: 800; letter-spacing: .8px; }
+    .footer span:last-child { color: #a0aabc; }
+
+    @keyframes rise-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes bubble-drift { to { transform: translate3d(0, -12px, 0); } }
+    @keyframes balloon-pop-in { from { opacity: 0; transform: scale(.45) translateY(7px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 28px, 420px); padding-top: 18px; }
+      .topbar { margin-bottom: 32px; }
+      .sector-tag { font-size: 8px; }
+      .game-panel { padding: 15px 14px 19px; }
+      h1 { font-size: 42px; }
+      .arena-head { align-items: flex-start; flex-direction: column; gap: 12px; padding-bottom: 13px; }
+      .mode-switch { width: 100%; }
+      .mode-button { flex: 1; }
+      .difficulty-control, .starting-control { align-items: flex-start; flex-direction: column; gap: 8px; }
+      .difficulty-switch { width: 100%; }
+      .difficulty-button { flex: 1; padding: 0 7px; }
+      .score-row { gap: 14px; padding: 16px 0 12px; }
+      .pilot { min-width: 0; gap: 7px; }
+      .pilot-icon { width: 30px; height: 30px; }
+      .pilot-name { font-size: 9px; }
+      .score-number { font-size: 19px; }
+      .board { gap: 6px; }
+      .footer { font-size: 7px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Bubble Bash">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><path d="M9 3.5c-4 0-6.5 3.2-6.5 7.3 0 4.8 4.2 9.4 6.5 11.6 2.3-2.2 6.5-6.8 6.5-11.6 0-4.1-2.5-7.3-6.5-7.3Z" fill="#F47D99"/><path d="M22.5 2c-3.4 0-5.5 2.7-5.5 6.2 0 4.1 3.5 8 5.5 9.8 2-1.8 5.5-5.7 5.5-9.8 0-3.5-2.1-6.2-5.5-6.2Z" fill="#42C7C4"/><path d="m9 22.4 1.2 1.7L11 22m11.5-4 1 1.6.8-1.6M10.2 24c3 1 3 3 1.3 5m11-10.5c-1.5 2.5-1 4 1.4 5.1" stroke="#7B8DA8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div><div class="brand-name">BUBBLE BASH</div><div class="brand-sub">BALLOONS · BIG FUN</div></div>
+      </div>
+      <div class="sector-tag"><span class="live-dot"></span> PARTY MODE / ON</div>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <div class="eyebrow">Colorful · clever · ready to play</div>
+      <h1 id="page-title">Balloon <span>bash</span></h1>
+      <p>Match three balloons and win the party. Your move!</p>
+    </section>
+
+    <section class="game-panel" aria-label="Balloon bash game">
+      <div class="arena-head">
+        <div class="section-label">Party setup</div>
+        <div class="mode-switch" role="group" aria-label="Game mode">
+          <button class="mode-button" type="button" data-mode="cpu" aria-pressed="true">VS COMPUTER</button>
+          <button class="mode-button" type="button" data-mode="local" aria-pressed="false">TWO PLAYERS</button>
+        </div>
+      </div>
+      <div class="difficulty-control" id="difficulty-control">
+        <div class="difficulty-label">AI difficulty</div>
+        <div class="difficulty-switch" role="group" aria-label="AI difficulty">
+          <button class="difficulty-button" type="button" data-difficulty="easy" aria-pressed="false">EASY</button>
+          <button class="difficulty-button" type="button" data-difficulty="medium" aria-pressed="false">MEDIUM</button>
+          <button class="difficulty-button" type="button" data-difficulty="hard" aria-pressed="true">HARD</button>
+        </div>
+      </div>
+      <div class="starting-control" id="starting-control">
+        <div class="difficulty-label">Who starts?</div>
+        <div class="difficulty-switch" role="group" aria-label="Who starts the game?">
+          <button class="difficulty-button" type="button" data-starter="0" aria-pressed="true">YOU START</button>
+          <button class="difficulty-button" type="button" data-starter="1" aria-pressed="false">AI STARTS</button>
+        </div>
+      </div>
+
+      <div class="score-row" aria-label="Score">
+        <div class="pilot">
+          <div class="pilot-icon" id="pilot-one-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 3.5c-6 0-10 4.4-10 10 0 6.8 7 12.1 9 15.3h2c2-3.2 9-8.5 9-15.3 0-5.6-4-10-10-10Z" fill="currentColor" fill-opacity=".85"/><ellipse cx="12" cy="11" rx="2.5" ry="4" fill="#fff" fill-opacity=".55"/><path d="m13 28 3 2 3-2m-3 2c-2 1.3 2 1.8 0 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div><div class="pilot-name" id="pilot-one-name">PLAYER ONE</div><div class="pilot-score">WINS <span class="score-number" id="score-one">0</span></div></div>
+        </div>
+        <div class="versus">VS</div>
+        <div class="pilot">
+          <div class="pilot-icon" id="pilot-two-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="6" r="2" fill="currentColor"/><path d="M16 8v2.5M9 11h14a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3Z" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="1.6"/><path d="M6 15H3v6h3m20-6h3v6h-3" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="17" r="1.5" fill="currentColor"/><circle cx="20" cy="17" r="1.5" fill="currentColor"/><path d="M12.5 21q3.5 3 7 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+          <div><div class="pilot-name" id="pilot-two-name">BUBBLE BOT</div><div class="pilot-score">WINS <span class="score-number" id="score-two">0</span></div></div>
+        </div>
+      </div>
+
+      <div class="turn-readout" id="turn-readout" role="status" aria-live="polite" data-player="0"><span class="turn-light"></span><span id="turn-text">Your turn, Pilot One</span></div>
+
+      <div class="board-wrap">
+        <div class="board" id="board" role="grid" aria-label="Tic tac toe board">
+          <button class="cell" type="button" role="gridcell" data-index="0" aria-label="Row 1, column 1, empty"></button>
+          <button class="cell" type="button" role="gridcell" data-index="1" aria-label="Row 1, column 2, empty"></button>
+          <button class="cell" type="button" role="gridcell" data-index="2" aria-label="Row 1, column 3, empty"></button>
+          <button class="cell" type="button" role="gridcell" data-index="3" aria-label="Row 2, column 1, empty"></button>
+          <button class="cell" type="button" role="gridcell" data-index="4" aria-label="Row 2, column 2, empty"></button>
+          <button class="cell" type="button" role="gridcell" data-index="5" aria-label="Row 2, column 3, empty"></button>
+          <button class="cell" type="button" role="gridcell" data-index="6" aria-label="Row 3, column 1, empty"></button>
+          <button class="cell" type="button" role="gridcell" data-index="7" aria-label="Row 3, column 2, empty"></button>
+          <button class="cell" type="button" role="gridcell" data-index="8" aria-label="Row 3, column 3, empty"></button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="reset-button" type="button" id="restart-button">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.2 5.8A5.5 5.5 0 1 0 13.5 9M13.2 2.8v3.4H9.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          NEW ROUND
+        </button>
+      </div>
+    </section>
+
+    <footer class="footer"><span>THE BUBBLE PARTY</span><span>GOOD VIBES ONLY</span></footer>
+  </main>
+
+  <script>
+    (() => {
+      const winningLines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+      ];
+      const cells = [...document.querySelectorAll('.cell')];
+      const modeButtons = [...document.querySelectorAll('.mode-button')];
+      const difficultyButtons = [...document.querySelectorAll('.difficulty-button')];
+      const difficultyControl = document.getElementById('difficulty-control');
+      const startingButtons = [...document.querySelectorAll('[data-starter]')];
+      const startingControl = document.getElementById('starting-control');
+      const pilotOneIcon = document.getElementById('pilot-one-icon');
+      const pilotTwoIcon = document.getElementById('pilot-two-icon');
+      const robotAvatarMarkup = pilotTwoIcon.innerHTML;
+      const turnReadout = document.getElementById('turn-readout');
+      const turnText = document.getElementById('turn-text');
+      const scores = [0, 0];
+      let board = Array(9).fill(null);
+      let currentPlayer = 0;
+      let mode = 'cpu';
+      let difficulty = 'hard';
+      let startingPlayer = 0;
+      let gameOver = false;
+      let cpuTimer;
+
+      const humanFaces = [
+        { skin: '#E8B991', hair: '#354440', shape: 'M6 17C4 8 9 3 16 3s12 5 10 14l-3-3-1-5c-4 3-9 3-13 1l-1 7Z', fringe: 'M8 13c2-5 5-7 9-7 3 0 5 2 6 5-3 0-6-1-8-3-2 2-4 4-7 5Z' },
+        { skin: '#A86E52', hair: '#252D2B', shape: 'M6 17C4 8 9 3 16 3s12 5 10 14l-3-2c0-6-3-9-7-9s-7 3-7 9l-3 2Z', fringe: 'M8 13c1-5 4-8 8-8 4 0 7 3 8 8-3-1-5-3-6-5-3 3-6 4-10 5Z' },
+        { skin: '#F0CEAE', hair: '#B96843', shape: 'M6 17C4 8 9 3 16 3s12 5 10 14l-3-3-1-5c-4 3-9 3-13 1l-1 7Z', fringe: 'M8 13c2-5 5-7 9-7 3 0 5 2 6 5-3 0-6-1-8-3-2 2-4 4-7 5Z' },
+        { skin: '#D4A17D', hair: '#443C56', shape: 'M6 17C4 8 9 3 16 3s12 5 10 14l-3-2-1-5c-4 3-9 3-13 1l-1 7Z', fringe: 'M8 13c1-5 4-8 8-8 4 0 7 3 8 8-3-1-5-3-6-5-3 3-6 4-10 5Z' }
+      ];
+
+      const animalAvatars = [
+        `<svg class="animal-avatar" viewBox="0 0 32 32" fill="none"><path d="M5 14 4 5l8 5q4-2 8 0l8-5-1 9c0 8-5 14-11 14S5 22 5 14Z" fill="#E8A05C" stroke="#A85B49" stroke-width="1.2" stroke-linejoin="round"/><path d="m7 8 4 4m14-4-4 4" stroke="#F5C6A0" stroke-width="2" stroke-linecap="round"/><ellipse cx="11.5" cy="17" rx="1.3" ry="1.7" fill="#354440"/><ellipse cx="20.5" cy="17" rx="1.3" ry="1.7" fill="#354440"/><path d="m14 21 2 1.5 2-1.5m-2 1.5v2m0-2c-2 2-4 2-5 1m5-1c2 2 4 2 5 1" stroke="#70443D" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        `<svg class="animal-avatar" viewBox="0 0 32 32" fill="none"><path d="M5 16 4 3l10 7q2-.6 4 0l10-7-1 13c0 8-5 14-11 14S5 24 5 16Z" fill="#EF8B55" stroke="#A85B49" stroke-width="1.2" stroke-linejoin="round"/><path d="M6 5 9 16m17-11-3 11" stroke="#FFD5A1" stroke-width="2" stroke-linecap="round"/><path d="M8 18q8-5 16 0-1 8-8 9-7-1-8-9Z" fill="#FFF0D9"/><circle cx="11.5" cy="16" r="1.2" fill="#354440"/><circle cx="20.5" cy="16" r="1.2" fill="#354440"/><path d="m14 20 2 1.5 2-1.5m-2 1.5v2" stroke="#70443D" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        `<svg class="animal-avatar" viewBox="0 0 32 32" fill="none"><circle cx="8" cy="9" r="5" fill="#354440"/><circle cx="24" cy="9" r="5" fill="#354440"/><path d="M5 17a11 11 0 0 1 22 0v3a11 9 0 0 1-22 0v-3Z" fill="#F7F5EF" stroke="#9CA9B6" stroke-width="1.2"/><ellipse cx="11.5" cy="17" rx="3.5" ry="4" fill="#354440"/><ellipse cx="20.5" cy="17" rx="3.5" ry="4" fill="#354440"/><circle cx="12" cy="17" r="1.2" fill="#fff"/><circle cx="20" cy="17" r="1.2" fill="#fff"/><path d="m14 22 2 1.5 2-1.5m-2 1.5v2" stroke="#D68A9A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        `<svg class="animal-avatar" viewBox="0 0 32 32" fill="none"><path d="M9 17C8 12 5 3 8 2c4-1 7 7 8 10 1-3 4-11 8-10 3 1 0 10-1 15v3a9 8 0 0 1-18 0v-3Z" fill="#D7B68F" stroke="#9F7D60" stroke-width="1.2" stroke-linejoin="round"/><path d="M9 5c1 1 3 5 4 8m10-8c-1 1-3 5-4 8" stroke="#F3C1C5" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="19" r="1.2" fill="#354440"/><circle cx="20" cy="19" r="1.2" fill="#354440"/><path d="m14 22 2 1 2-1m-2 1v2" stroke="#B57983" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      ];
+
+      function winningLine(state) {
+        return winningLines.find(([a, b, c]) => state[a] !== null && state[a] === state[b] && state[a] === state[c]);
+      }
+
+      function balloonMarkup(player) {
+        return `<svg class="balloon player-${player}" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C35 8 25 19 25 35c0 20 18 34 23 41h4c5-7 23-21 23-41C75 19 65 8 50 8Z" fill="currentColor" stroke="#fff" stroke-opacity=".75" stroke-width="3"/><ellipse cx="40" cy="27" rx="5" ry="9" fill="#fff" fill-opacity=".52"/><path d="m45 76 5 7 5-7m-5 7c-5 4 5 6 0 13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      }
+
+      function randomAnimalAvatarMarkup() {
+        return animalAvatars[Math.floor(Math.random() * animalAvatars.length)];
+      }
+
+      function randomHumanAvatarMarkup() {
+        const face = humanFaces[Math.floor(Math.random() * humanFaces.length)];
+        return `<svg viewBox="0 0 32 32" fill="none"><path d="${face.shape}" fill="${face.hair}"/><circle cx="8" cy="18" r="2" fill="${face.skin}"/><circle cx="24" cy="18" r="2" fill="${face.skin}"/><path d="M8 15a8 9 0 0 1 16 0v5a8 8 0 0 1-16 0v-5Z" fill="${face.skin}"/><path d="${face.fringe}" fill="${face.hair}"/><circle cx="12.5" cy="18" r="1" fill="#252D2B"/><circle cx="19.5" cy="18" r="1" fill="#252D2B"/><path d="M13 22q3 2.5 6 0" stroke="#7A493C" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+      }
+
+      pilotOneIcon.innerHTML = randomAnimalAvatarMarkup();
+
+      function render() {
+        cells.forEach((cell, index) => {
+          const player = board[index];
+          cell.innerHTML = player === null ? '' : balloonMarkup(player);
+          cell.disabled = gameOver || player !== null || (mode === 'cpu' && currentPlayer === 1);
+          cell.setAttribute('aria-label', `Row ${Math.floor(index / 3) + 1}, column ${(index % 3) + 1}, ${player === null ? 'empty' : player === 0 ? 'Player One balloon' : mode === 'cpu' ? 'Bubble Bot balloon' : 'Player Two balloon'}`);
+          cell.classList.remove('winning');
+        });
+        const line = winningLine(board);
+        if (line) line.forEach(index => cells[index].classList.add('winning'));
+      }
+
+      function setStatus(message, outcome = null) {
+        turnReadout.dataset.player = String(currentPlayer);
+        if (outcome) turnReadout.dataset.outcome = outcome;
+        else delete turnReadout.dataset.outcome;
+        turnText.textContent = message;
+      }
+
+      function finishRound() {
+        const line = winningLine(board);
+        if (line) {
+          gameOver = true;
+          scores[currentPlayer] += 1;
+          document.getElementById('score-one').textContent = scores[0];
+          document.getElementById('score-two').textContent = scores[1];
+          const winner = currentPlayer === 0 ? 'Player One' : mode === 'cpu' ? 'Bubble Bot' : 'Player Two';
+          setStatus(`${winner} wins the party!`, 'win');
+          return true;
+        }
+        if (board.every(value => value !== null)) {
+          gameOver = true;
+          setStatus('It\'s a tie! Everybody wins.', 'draw');
+          return true;
+        }
+        return false;
+      }
+
+      function takeTurn(index) {
+        if (gameOver || board[index] !== null || (mode === 'cpu' && currentPlayer === 1)) return;
+        board[index] = currentPlayer;
+        if (!finishRound()) {
+          currentPlayer = 1 - currentPlayer;
+          setStatus(mode === 'cpu' && currentPlayer === 1 ? 'Bubble Bot thinking…' : `Your turn, ${currentPlayer === 0 ? 'Player One' : 'Player Two'}`);
+        }
+        render();
+        scheduleCpuTurn();
+      }
+
+      function scheduleCpuTurn() {
+        if (gameOver || mode !== 'cpu' || currentPlayer !== 1) return;
+        cpuTimer = window.setTimeout(() => {
+          const move = chooseCpuMove();
+          if (move !== -1 && !gameOver) {
+            board[move] = 1;
+            if (!finishRound()) {
+              currentPlayer = 0;
+              setStatus('Your turn, Player One');
+            }
+            render();
+          }
+        }, 420);
+      }
+
+      function scorePosition(state, depth, maximizing) {
+        const line = winningLine(state);
+        if (line) {
+          const winner = state[line[0]];
+          return winner === 1 ? 10 - depth : depth - 10;
+        }
+        if (state.every(value => value !== null)) return 0;
+        const player = maximizing ? 1 : 0;
+        let best = maximizing ? -Infinity : Infinity;
+        for (let index = 0; index < state.length; index += 1) {
+          if (state[index] !== null) continue;
+          state[index] = player;
+          const score = scorePosition(state, depth + 1, !maximizing);
+          state[index] = null;
+          best = maximizing ? Math.max(best, score) : Math.min(best, score);
+        }
+        return best;
+      }
+
+      function randomMove() {
+        const availableMoves = board.flatMap((value, index) => value === null ? [index] : []);
+        return availableMoves[Math.floor(Math.random() * availableMoves.length)] ?? -1;
+      }
+
+      function immediateWinningMove(player) {
+        for (let index = 0; index < board.length; index += 1) {
+          if (board[index] !== null) continue;
+          board[index] = player;
+          const wins = Boolean(winningLine(board));
+          board[index] = null;
+          if (wins) return index;
+        }
+        return -1;
+      }
+
+      function hardMove() {
+        let bestScore = -Infinity;
+        let bestMoves = [];
+        for (let index = 0; index < board.length; index += 1) {
+          if (board[index] !== null) continue;
+          board[index] = 1;
+          const score = scorePosition(board, 0, false);
+          board[index] = null;
+          if (score > bestScore) {
+            bestScore = score;
+            bestMoves = [index];
+          } else if (score === bestScore) bestMoves.push(index);
+        }
+        return bestMoves[Math.floor(Math.random() * bestMoves.length)] ?? -1;
+      }
+
+      function chooseCpuMove() {
+        if (difficulty === 'easy') return randomMove();
+        if (difficulty === 'medium') return immediateWinningMove(1) !== -1
+          ? immediateWinningMove(1)
+          : immediateWinningMove(0) !== -1 ? immediateWinningMove(0) : randomMove();
+        return hardMove();
+      }
+
+      function restartRound() {
+        window.clearTimeout(cpuTimer);
+        board = Array(9).fill(null);
+        currentPlayer = mode === 'cpu' ? startingPlayer : 0;
+        gameOver = false;
+        setStatus(currentPlayer === 1 ? 'Bubble Bot thinking…' : 'Your turn, Player One');
+        render();
+        scheduleCpuTurn();
+      }
+
+      cells.forEach(cell => cell.addEventListener('click', () => takeTurn(Number(cell.dataset.index))));
+      document.getElementById('restart-button').addEventListener('click', restartRound);
+      modeButtons.forEach(button => button.addEventListener('click', () => {
+        mode = button.dataset.mode;
+        modeButtons.forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+        difficultyControl.hidden = mode !== 'cpu';
+        startingControl.hidden = mode !== 'cpu';
+        document.getElementById('pilot-one-name').textContent = 'PLAYER ONE';
+        document.getElementById('pilot-two-name').textContent = mode === 'cpu' ? 'BUBBLE BOT' : 'PLAYER TWO';
+        pilotOneIcon.innerHTML = randomAnimalAvatarMarkup();
+        pilotTwoIcon.innerHTML = mode === 'cpu' ? robotAvatarMarkup : randomHumanAvatarMarkup();
+        restartRound();
+      }));
+      difficultyButtons.forEach(button => button.addEventListener('click', () => {
+        difficulty = button.dataset.difficulty;
+        difficultyButtons.forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+        restartRound();
+      }));
+      startingButtons.forEach(button => button.addEventListener('click', () => {
+        startingPlayer = Number(button.dataset.starter);
+        startingButtons.forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+        restartRound();
+      }));
+      render();
+    })();
+  </script>
+</body>
+</html>
